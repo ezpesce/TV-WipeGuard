@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">TV WipeGuard</string>
+    <string name="device_admin_label">TV WipeGuard — Administrador de Borrado</string>
+    <string name="device_admin_description">Permite invocar el comando de sistema DevicePolicyManager.wipeData() para ejecutar un restablecimiento profundo a valores de fábrica en el televisor.</string>
+    <string name="device_admin_explanation">TV WipeGuard solicita privilegios de Administrador de Dispositivo únicamente para ejecutar el comando de sistema wipeData() durante el restablecimiento profundo a valores de fábrica.</string>
+    <string name="action_prepare_reset">Iniciar Borrado Profundo</string>
+    <string name="action_configure_pin">Configurar PIN de Seguridad</string>
+    <string name="action_change_pin">Cambiar PIN de Seguridad</string>
+    <string name="action_activate_admin">Activar Admin de Dispositivo</string>
+    <string name="action_open_system_reset">Abrir Ajustes de Fábrica del TV</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_back">Volver</string>
+    <string name="action_export_report">Exportar Registro (.txt)</string>
+    <string name="action_copy_report">Copiar Hash y Resumen</string>
+</resources>

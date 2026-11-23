@@ -1,0 +1,6 @@
+{
+  "name": "TV WipeGuard",
+  "description": "Utilidad de seguridad para Android TV que ejecuta reseteo profundo a valores de fábrica y sanitización segura del almacenamiento interno mediante comandos de sistema, con confirmación por PIN, progreso en tiempo real y registro de verificación.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
