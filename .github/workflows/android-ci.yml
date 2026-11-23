@@ -1,0 +1,94 @@
+name: Android TV CI — Compilar APK
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Compilar y Probar TV WipeGuard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Aceptar licencias de Android SDK
+        run: |
+          if [ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+          fi
+
+      - name: Preparar debug.keystore y .env para compilación CI
+        run: |
+          if [ ! -f debug.keystore ] && [ -f debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          elif [ ! -f debug.keystore ]; then
+            keytool -genkeypair -v -keystore debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          if [ ! -f .env ] && [ -f .env.example ]; then
+            cp .env.example .env
+          fi
+
+      - name: Configurar Gradle 9.3.1 con caché
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+
+      - name: Ejecutar pruebas unitarias
+        run: gradle :app:testDebugUnitTest --no-daemon
+
+      - name: Compilar APK Debug (Android TV)
+        run: gradle :app:assembleDebug --no-daemon
+
+      - name: Subir APK Debug como artefacto descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: TV-WipeGuard-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Verificar secretos de firma Release
+        id: release_check
+        env:
+          HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
+          HAS_STORE_PASS: ${{ secrets.STORE_PASSWORD }}
+          HAS_KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -n "$HAS_KEYSTORE" ] && [ -n "$HAS_STORE_PASS" ] && [ -n "$HAS_KEY_PASS" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compilar APK/AAB Release (si hay secretos de firma configurados)
+        if: steps.release_check.outputs.enabled == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PATH: ${{ github.workspace }}/release-upload-key.jks
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+          gradle :app:assembleRelease :app:bundleRelease --no-daemon
+
+      - name: Subir APK/AAB Release como artefacto descargable
+        if: steps.release_check.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: TV-WipeGuard-release-artifacts
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+          retention-days: 30
